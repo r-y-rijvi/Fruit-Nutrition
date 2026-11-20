@@ -2,7 +2,7 @@
 
 import { ContactShadows, Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasTexture, Color, MathUtils, NeutralToneMapping, type Group, type MeshBasicMaterial, type PointLight } from "three";
 import { FRUIT_BY_ID } from "@/data";
 import { bindPointer, pointer } from "@/lib/pointer";
@@ -12,6 +12,73 @@ import { FruitModel, prefersReducedMotion } from "./FruitModel";
 import { REST_Y } from "./fruitObject";
 import { Particles } from "./Particles";
 import { ThumbnailBaker } from "./ThumbnailBaker";
+
+function hasWebGL(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const c = document.createElement("canvas");
+    return Boolean(c.getContext("webgl2") || c.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
+
+class StageErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+/** Interactive 2D anatomical fallback if WebGL is disabled or unavailable on a device. */
+function AnatomicalFallback() {
+  const fruitId = useApp((s) => s.fruitId);
+  const view = useApp((s) => s.view);
+  const activeLayer = useApp((s) => s.activeLayer);
+  const explode = useApp((s) => s.explode);
+  const setActiveLayer = useApp((s) => s.setActiveLayer);
+  const fruit = FRUIT_BY_ID[fruitId];
+  const sliced = view === "layers";
+  const layerData = fruit.layers.find((l) => l.key === activeLayer) ?? fruit.layers[1];
+
+  return (
+    <div className="grid h-full w-full place-items-center px-6">
+      <div className="flex flex-col items-center gap-4 min-[900px]:translate-x-[12vw]">
+        <button
+          type="button"
+          onClick={() => (sliced ? setActiveLayer(activeLayer === "peel" ? "flesh" : activeLayer === "flesh" ? "core" : "peel") : explode())}
+          aria-label={`Interactive ${fruit.name} anatomy`}
+          className="group relative grid size-60 place-items-center rounded-full transition-transform hover:scale-[1.03] sm:size-72"
+        >
+          <svg viewBox="0 0 240 240" className="size-full drop-shadow-[0_24px_40px_rgb(18_10_20/0.35)]">
+            <circle cx="120" cy="120" r="102" fill={fruit.palette[1]} stroke={activeLayer === "peel" && sliced ? "#120A14" : "transparent"} strokeWidth="5" />
+            {sliced ? (
+              <>
+                <circle cx="120" cy="120" r="84" fill={fruit.accent} stroke={activeLayer === "flesh" ? "#120A14" : "transparent"} strokeWidth="5" />
+                <circle cx="120" cy="120" r="38" fill={fruit.palette[3]} stroke={activeLayer === "core" ? "#120A14" : "transparent"} strokeWidth="5" />
+                <circle cx="120" cy="120" r="14" fill="#120A14" opacity="0.75" />
+              </>
+            ) : (
+              <ellipse cx="92" cy="86" rx="34" ry="22" fill="#FFFDF8" opacity="0.28" transform="rotate(-24 92 86)" />
+            )}
+          </svg>
+        </button>
+        {sliced && (
+          <div className="max-w-xs rounded-2xl border border-ink/12 bg-paper/90 px-4 py-3 text-center shadow-lg backdrop-blur-md">
+            <p className="font-mono text-[10px] tracking-[0.1em] text-ink/55 uppercase">
+              {layerData.role} · {layerData.botanical}
+            </p>
+            <p className="mt-1 text-[13.5px] font-semibold text-ink">{layerData.nutrients[0]?.title}</p>
+            <p className="mt-0.5 text-[12px] text-ink/70">{layerData.nutrients[0]?.benefit}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
@@ -147,31 +214,48 @@ function useDragSpin(el: React.RefObject<HTMLDivElement | null>) {
 export default function Stage() {
   const wrap = useRef<HTMLDivElement>(null);
   const [dpr, setDpr] = useState(1.75);
+  const [webglOk, setWebglOk] = useState(true);
   const live = useApp((s) => s.heroVisible);
   useDragSpin(wrap);
   useEffect(bindPointer, []);
+  useEffect(() => {
+    setWebglOk(hasWebGL());
+  }, []);
+
+  if (!webglOk) {
+    return (
+      <div className="absolute inset-0">
+        <AnatomicalFallback />
+      </div>
+    );
+  }
 
   return (
-    <div ref={wrap} className="stage-canvas absolute inset-0 touch-pan-y" data-dragging="false">
-      <Canvas
-        dpr={[1, dpr]}
-        frameloop={live ? "always" : "never"}
-        camera={{ position: [0, 0.16, 7.4], fov: 30, near: 0.1, far: 60 }}
-        gl={{ antialias: true, alpha: true, toneMapping: NeutralToneMapping, toneMappingExposure: 1.05, powerPreference: "high-performance" }}
-        onPointerMissed={() => {
-          const st = useApp.getState();
-          if (st.view === "layers" && !st.busy) st.reassemble();
-        }}
-        aria-label="Interactive 3D fruit model"
-      >
-        <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.75)} />
-        <CameraRig />
-        <Lights />
-        <Pedestal />
-        <FruitModel />
-        <Particles />
-        <ThumbnailBaker />
-      </Canvas>
-    </div>
+    <StageErrorBoundary fallback={<AnatomicalFallback />}>
+      <div ref={wrap} className="stage-canvas absolute inset-0 touch-pan-y" data-dragging="false">
+        <Canvas
+          dpr={[1, dpr]}
+          frameloop={live ? "always" : "never"}
+          camera={{ position: [0, 0.16, 7.4], fov: 30, near: 0.1, far: 60 }}
+          gl={{ antialias: true, alpha: true, toneMapping: NeutralToneMapping, toneMappingExposure: 1.05, powerPreference: "high-performance" }}
+          onCreated={({ gl }) => {
+            gl.domElement.addEventListener("webglcontextlost", () => setWebglOk(false), { once: true });
+          }}
+          onPointerMissed={() => {
+            const st = useApp.getState();
+            if (st.view === "layers" && !st.busy) st.reassemble();
+          }}
+          aria-label="Interactive 3D fruit model"
+        >
+          <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.75)} />
+          <CameraRig />
+          <Lights />
+          <Pedestal />
+          <FruitModel />
+          <Particles />
+          <ThumbnailBaker />
+        </Canvas>
+      </div>
+    </StageErrorBoundary>
   );
 }

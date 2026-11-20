@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "motion/react";
 import { useRef } from "react";
+import { AICopilot } from "@/components/overlay/AICopilot";
 import { CalloutOverlay } from "@/components/overlay/CalloutOverlay";
 import { BenefitPills, FruitDock } from "@/components/overlay/FruitDock";
 import { Halo } from "@/components/overlay/Halo";
@@ -44,7 +45,7 @@ export default function Page() {
           </div>
           <CalloutOverlay />
 
-          <div className="pointer-events-none absolute inset-0 z-30 flex flex-col pt-[116px] min-[900px]:pt-[76px]">
+          <div className="pointer-events-none absolute inset-0 z-30 flex flex-col pt-[116px] min-[900px]:pt-[88px]">
             <div className="flex min-h-0 flex-1 flex-col px-5 min-[900px]:justify-center min-[900px]:px-10 min-[900px]:pb-[132px] xl:px-16">
               <div className="pointer-events-auto w-fit max-w-full">
                 <HeroTitle />
@@ -81,6 +82,7 @@ export default function Page() {
           <Footer />
         </div>
       </main>
+      <AICopilot />
       <Cursor />
       <FloatingTooltip />
     </>
@@ -89,9 +91,9 @@ export default function Page() {
 
 function StageLoading() {
   return (
-    <div className="grid h-full place-items-center" role="status">
-      <div className="flex flex-col items-center gap-3 text-white/80">
-        <span className="size-14 animate-spin rounded-full border-2 border-white/20 border-t-white/90" aria-hidden />
+    <div className="pointer-events-none grid h-full place-items-center" role="status">
+      <div className="flex flex-col items-center gap-3 text-ink/75">
+        <span className="size-12 animate-spin rounded-full border-2 border-ink/20 border-t-ink/80" aria-hidden />
         <span className="font-mono text-[10.5px] tracking-[0.12em] uppercase">Growing specimen…</span>
       </div>
     </div>

@@ -108,39 +108,21 @@ function PairCard({ s, fits, lit }: { s: Synergy; fits: string | null; lit: bool
       </div>
 
       <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch">
-        <motion.div
-          initial={{ x: -48, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: true, margin: "-10% 0px" }}
-          transition={SPRING}
-          className="rounded-2xl bg-[color-mix(in_oklab,var(--accent)_22%,white)] p-4 pr-5"
-        >
+        <div className="rounded-2xl bg-[color-mix(in_oklab,var(--accent)_22%,white)] p-4 pr-5">
           <p className="font-mono text-[9.5px] tracking-[0.08em] text-ink/55 uppercase">Fruit side</p>
           <p className="mt-1.5 text-[16px] leading-tight font-bold text-ink">{s.fruitSide.nutrient}</p>
           <p className="mt-1 text-[13px] leading-snug text-ink/65">{s.fruitSide.label}</p>
-        </motion.div>
-        <motion.span
-          initial={{ scale: 0, rotate: -90 }}
-          whileInView={{ scale: 1, rotate: 0 }}
-          viewport={{ once: true, margin: "-10% 0px" }}
-          transition={{ ...SPRING, delay: 0.18 }}
-          className="z-10 -mx-2.5 grid place-items-center self-center"
-        >
+        </div>
+        <span className="z-10 -mx-2.5 grid place-items-center self-center">
           <span className={cn("on-dark grid size-9 place-items-center rounded-full text-white ring-4 ring-white", caution ? "bg-magenta" : "bg-ink")}>
             <Join className="size-4" aria-hidden />
           </span>
-        </motion.span>
-        <motion.div
-          initial={{ x: 48, opacity: 0 }}
-          whileInView={{ x: 0, opacity: 1 }}
-          viewport={{ once: true, margin: "-10% 0px" }}
-          transition={SPRING}
-          className="rounded-2xl bg-ink/[0.05] p-4 pl-5"
-        >
+        </span>
+        <div className="rounded-2xl bg-ink/[0.05] p-4 pl-5">
           <p className="font-mono text-[9.5px] tracking-[0.08em] text-ink/55 uppercase">{caution ? "Watch with" : "Pair with"}</p>
           <p className="mt-1.5 text-[16px] leading-tight font-bold text-ink">{s.partner.nutrient}</p>
           <p className="mt-1 text-[13px] leading-snug text-ink/65">{s.partner.label}</p>
-        </motion.div>
+        </div>
       </div>
 
       <p className="mt-5 font-display text-[19px] leading-snug font-bold tracking-[-0.02em] text-ink">

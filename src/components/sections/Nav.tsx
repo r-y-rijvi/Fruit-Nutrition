@@ -1,9 +1,11 @@
 "use client";
 
 import { LayoutGroup, motion } from "motion/react";
+import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SearchBar } from "@/components/overlay/SearchBar";
 import { scrollToId } from "@/lib/scroll";
+import { useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 24 };
@@ -18,6 +20,7 @@ export function Nav() {
   const [hover, setHover] = useState<string | null>(null);
   const [active, setActive] = useState("top");
   const [scrolled, setScrolled] = useState(false);
+  const setCopilotOpen = useApp((s) => s.setCopilotOpen);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -45,11 +48,11 @@ export function Nav() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-40 transition-[background-color,box-shadow,backdrop-filter] duration-300",
-        scrolled && "bg-paper/70 shadow-[0_1px_0_rgb(18_10_20/0.08)] backdrop-blur-xl",
+        "fixed inset-x-0 top-0 z-40 border-b border-ink/8 backdrop-blur-xl transition-[background-color,box-shadow] duration-300",
+        scrolled ? "bg-paper/92 shadow-[0_6px_24px_-16px_rgb(18_10_20/0.3)]" : "bg-paper/78",
       )}
     >
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-5 gap-y-2 px-5 py-2.5 min-[900px]:h-[76px] min-[900px]:flex-nowrap min-[900px]:px-10 min-[900px]:py-0 xl:px-16">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-2.5 min-[900px]:h-[76px] min-[900px]:flex-nowrap min-[900px]:px-10 min-[900px]:py-0 xl:px-16">
         <a
           href="#top"
           onClick={(e) => {
@@ -65,7 +68,7 @@ export function Nav() {
         </a>
 
         <LayoutGroup id="nav">
-          <nav aria-label="Sections" className="no-scrollbar -mx-2 ml-auto overflow-x-auto min-[900px]:mx-0 min-[900px]:ml-4">
+          <nav aria-label="Sections" className="no-scrollbar -mx-2 ml-auto overflow-x-auto min-[900px]:mx-0 min-[900px]:ml-3">
             <ul className="flex items-center" onPointerLeave={() => setHover(null)}>
               {LINKS.map((l) => {
                 const on = active === l.id;
@@ -84,7 +87,7 @@ export function Nav() {
                       }}
                       className={cn(
                         "relative block rounded-full px-2.5 py-2 text-[13px] font-semibold whitespace-nowrap transition-colors duration-200 min-[900px]:px-3.5",
-                        on ? "text-ink" : "text-ink/60 hover:text-ink",
+                        on ? "text-ink" : "text-ink/70 hover:text-ink",
                       )}
                     >
                       {hover === l.id && <motion.span layoutId="nav-hover" transition={SPRING} className="absolute inset-0 rounded-full bg-ink/[0.07]" />}
@@ -98,7 +101,16 @@ export function Nav() {
           </nav>
         </LayoutGroup>
 
-        <SearchBar className="w-full min-[900px]:ml-auto min-[900px]:w-[min(400px,34vw)]" />
+        <button
+          type="button"
+          onClick={() => setCopilotOpen(true)}
+          className="on-dark hidden shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-[12.5px] font-semibold text-white transition-transform hover:scale-[1.02] active:scale-95 min-[1100px]:inline-flex"
+        >
+          <Sparkles className="size-3.5 text-[var(--accent)]" aria-hidden />
+          AI Copilot
+        </button>
+
+        <SearchBar className="w-full min-[900px]:ml-auto min-[900px]:w-[min(380px,32vw)]" />
       </div>
     </header>
   );

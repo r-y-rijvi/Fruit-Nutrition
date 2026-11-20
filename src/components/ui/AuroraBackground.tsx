@@ -77,23 +77,36 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string) {
 
 export function AuroraBackground() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const fruitId = useApp((s) => s.fruitId);
+  const palette = FRUIT_BY_ID[fruitId]?.palette ?? ["#FFB627", "#FF7A1A", "#FFE39E", "#FFF5DC"];
 
   useEffect(() => {
-    const canvas = ref.current!;
-    const gl = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: false });
+    const canvas = ref.current;
+    if (!canvas) return;
+    let gl: WebGL2RenderingContext | null = null;
+    try {
+      gl = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: false });
+    } catch {
+      return;
+    }
     if (!gl || gl.isContextLost()) return;
-    const prog = gl.createProgram()!;
-    gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
-    gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
-    gl.linkProgram(prog);
-    gl.useProgram(prog);
+    let prog: WebGLProgram | null = null;
+    try {
+      prog = gl.createProgram()!;
+      gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
+      gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+      gl.linkProgram(prog);
+      gl.useProgram(prog);
+    } catch {
+      return;
+    }
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, "p");
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    const u = (n: string) => gl.getUniformLocation(prog, n);
+    const u = (n: string) => gl!.getUniformLocation(prog!, n);
     const uRes = u("uRes"), uTime = u("uTime"), uMouse = u("uMouse"), uTrail = u("uTrail"), uC = u("uC");
 
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -120,7 +133,7 @@ export function AuroraBackground() {
     const resize = () => {
       canvas.width = Math.round(window.innerWidth * scale);
       canvas.height = Math.round(window.innerHeight * scale);
-      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl!.viewport(0, 0, canvas.width, canvas.height);
     };
     resize();
     window.addEventListener("resize", resize);
@@ -146,12 +159,12 @@ export function AuroraBackground() {
       mouse.sx += (mouse.x - mouse.sx) * Math.min(1, dt * 10);
       mouse.sy += (mouse.y - mouse.sy) * Math.min(1, dt * 10);
       mouse.trail *= Math.exp(-dt * 1.6);
-      gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform1f(uTime, time);
-      gl.uniform2f(uMouse, mouse.sx, mouse.sy);
-      gl.uniform1f(uTrail, mouse.trail);
-      gl.uniform3fv(uC, colors);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl!.uniform2f(uRes, canvas.width, canvas.height);
+      gl!.uniform1f(uTime, time);
+      gl!.uniform2f(uMouse, mouse.sx, mouse.sy);
+      gl!.uniform1f(uTrail, mouse.trail);
+      gl!.uniform3fv(uC, colors);
+      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
     };
     raf = requestAnimationFrame(frame);
 
@@ -160,13 +173,19 @@ export function AuroraBackground() {
       unsub();
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("resize", resize);
-      gl.deleteBuffer(buf);
-      gl.deleteProgram(prog);
+      gl!.deleteBuffer(buf);
+      gl!.deleteProgram(prog);
     };
   }, []);
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 -z-10 transition-colors duration-700"
+      style={{
+        background: `radial-gradient(circle at 20% 20%, ${palette[3]}, transparent 58%), radial-gradient(circle at 82% 28%, ${palette[0]}, transparent 55%), radial-gradient(circle at 68% 82%, ${palette[1]}, ${palette[2]} 70%)`,
+      }}
+    >
       <canvas ref={ref} className="h-full w-full" />
       <div className="grain absolute inset-0" />
     </div>

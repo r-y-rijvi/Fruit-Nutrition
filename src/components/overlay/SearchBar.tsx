@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Search } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { search, type SearchHit } from "@/data";
 import { scrollToId } from "@/lib/scroll";
@@ -68,6 +68,15 @@ export function SearchBar({ className }: { className?: string }) {
     scrollToId("top");
   };
 
+  const askAI = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setOpen(false);
+    setQ("");
+    input.current?.blur();
+    st.getState().askCopilot(trimmed);
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -78,7 +87,8 @@ export function SearchBar({ className }: { className?: string }) {
       setCursor((c) => Math.max(c - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (hits[cursor]) choose(hits[cursor]);
+      if (hits[cursor] && q.trim().split(/\s+/).length <= 2) choose(hits[cursor]);
+      else if (q.trim()) askAI(q);
     } else if (e.key === "Escape") {
       if (q) setQ("");
       else {
@@ -88,7 +98,6 @@ export function SearchBar({ className }: { className?: string }) {
     }
   };
 
-  const floated = focused || q.length > 0;
   const showPanel = open && (focused || q.length > 0);
 
   return (
@@ -97,54 +106,48 @@ export function SearchBar({ className }: { className?: string }) {
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          if (hits[cursor]) choose(hits[cursor]);
+          if (hits[cursor] && q.trim().split(/\s+/).length <= 2) choose(hits[cursor]);
+          else if (q.trim()) askAI(q);
           else input.current?.focus();
         }}
         className={cn(
-          "relative flex h-[52px] items-center rounded-2xl border bg-paper/80 pr-1.5 pl-4 shadow-[0_10px_30px_-18px_rgb(18_10_20/0.6)] backdrop-blur-xl transition-[border-color,box-shadow] duration-200",
-          focused ? "border-ink/60 shadow-[0_14px_40px_-16px_rgb(18_10_20/0.55)]" : "border-ink/10",
+          "relative flex h-[48px] items-center rounded-2xl border bg-white/95 pr-1.5 pl-3.5 shadow-[0_10px_30px_-18px_rgb(18_10_20/0.45)] transition-[border-color,box-shadow] duration-200",
+          focused ? "border-ink/60 shadow-[0_14px_40px_-16px_rgb(18_10_20/0.45)]" : "border-ink/12",
         )}
       >
         <Search aria-hidden className="mr-2.5 size-4 shrink-0 text-ink/55" />
-        <div className="relative h-full min-w-0 flex-1">
-          <motion.label
-            htmlFor={`${listId}-input`}
-            className="pointer-events-none absolute left-0 origin-left whitespace-nowrap text-ink/55"
-            initial={false}
-            animate={floated ? { y: 7, scale: 0.72, opacity: 0.9 } : { y: 16, scale: 1, opacity: 1 }}
-            transition={SPRING}
-          >
-            Search fruit, nutrient or benefit
-          </motion.label>
-          <input
-            id={`${listId}-input`}
-            ref={input}
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => {
-              setFocused(true);
-              setOpen(true);
-            }}
-            onBlur={() => setFocused(false)}
-            onKeyDown={onKeyDown}
-            role="combobox"
-            aria-expanded={showPanel}
-            aria-controls={`${listId}-list`}
-            aria-activedescendant={showPanel && hits[cursor] ? `${listId}-${hitKey(hits[cursor])}` : undefined}
-            aria-autocomplete="list"
-            autoComplete="off"
-            spellCheck={false}
-            className="absolute inset-x-0 bottom-1.5 h-7 w-full bg-transparent text-[15px] font-medium text-ink outline-none focus-visible:outline-none"
-          />
-        </div>
+        <label htmlFor={`${listId}-input`} className="sr-only">
+          Search fruit, nutrient, or ask AI
+        </label>
+        <input
+          id={`${listId}-input`}
+          ref={input}
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setFocused(true);
+            setOpen(true);
+          }}
+          onBlur={() => setFocused(false)}
+          onKeyDown={onKeyDown}
+          placeholder="Search fruit, nutrient, or ask AI…"
+          role="combobox"
+          aria-expanded={showPanel}
+          aria-controls={`${listId}-list`}
+          aria-activedescendant={showPanel && hits[cursor] ? `${listId}-${hitKey(hits[cursor])}` : undefined}
+          aria-autocomplete="list"
+          autoComplete="off"
+          spellCheck={false}
+          className="h-full min-w-0 flex-1 bg-transparent text-[14.5px] font-medium text-ink placeholder:font-normal placeholder:text-ink/50 outline-none focus-visible:outline-none"
+        />
         <kbd className="mx-2 hidden shrink-0 rounded-md border border-ink/12 px-1.5 py-0.5 font-mono text-[10px] text-ink/55 sm:block">
           {isMac ? "⌘K" : "Ctrl K"}
         </kbd>
-        <button type="submit" data-magnetic className="on-dark h-10 shrink-0 rounded-xl bg-ink px-4 text-[13.5px] font-semibold text-white transition-transform active:scale-95">
-          Search
+        <button type="submit" data-magnetic className="on-dark h-9 shrink-0 rounded-xl bg-ink px-3.5 text-[13px] font-semibold text-white transition-transform active:scale-95">
+          {q.trim().split(/\s+/).length > 2 ? "Ask AI" : "Search"}
         </button>
       </form>
 
@@ -155,7 +158,7 @@ export function SearchBar({ className }: { className?: string }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.12 } }}
             transition={SPRING}
-            className="absolute inset-x-0 top-[calc(100%+8px)] z-50 origin-top overflow-hidden rounded-2xl border border-ink/10 bg-paper/95 shadow-[0_30px_60px_-24px_rgb(18_10_20/0.55)] backdrop-blur-xl"
+            className="absolute inset-x-0 top-[calc(100%+8px)] z-50 origin-top overflow-hidden rounded-2xl border border-ink/10 bg-paper/98 shadow-[0_30px_60px_-24px_rgb(18_10_20/0.55)] backdrop-blur-xl"
           >
             {q.length === 0 ? (
               <div className="p-3">
@@ -174,28 +177,37 @@ export function SearchBar({ className }: { className?: string }) {
                   ))}
                 </div>
               </div>
-            ) : hits.length === 0 ? (
-              <p className="p-4 text-[13.5px] leading-snug text-ink/70">
-                Nothing matches “{q}”. Try a fruit like <b>Kiwi</b>, a nutrient like <b>Folate</b>, or a goal like <b>Heart health</b>.
-              </p>
             ) : (
-              <ul id={`${listId}-list`} role="listbox" aria-label="Search results" data-lenis-prevent className="max-h-[min(60vh,440px)] overflow-y-auto p-1.5">
-                {hits.map((h, i) => (
-                  <li
-                    key={hitKey(h)}
-                    id={`${listId}-${hitKey(h)}`}
-                    role="option"
-                    aria-selected={i === cursor}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseEnter={() => setCursor(i)}
-                    onClick={() => choose(h)}
-                    className="relative cursor-pointer rounded-xl px-3 py-2.5"
-                  >
-                    {i === cursor && <motion.span layoutId={`${listId}-hl`} transition={SPRING} className="absolute inset-0 -z-0 rounded-xl bg-ink/[0.06]" />}
-                    <HitRow hit={h} />
-                  </li>
-                ))}
-              </ul>
+              <div className="p-1.5">
+                {hits.length > 0 && (
+                  <ul id={`${listId}-list`} role="listbox" aria-label="Search results" data-lenis-prevent className="max-h-[min(50vh,340px)] overflow-y-auto">
+                    {hits.map((h, i) => (
+                      <li
+                        key={hitKey(h)}
+                        id={`${listId}-${hitKey(h)}`}
+                        role="option"
+                        aria-selected={i === cursor}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onMouseEnter={() => setCursor(i)}
+                        onClick={() => choose(h)}
+                        className="relative cursor-pointer rounded-xl px-3 py-2.5"
+                      >
+                        {i === cursor && <motion.span layoutId={`${listId}-hl`} transition={SPRING} className="absolute inset-0 -z-0 rounded-xl bg-ink/[0.06]" />}
+                        <HitRow hit={h} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => askAI(q)}
+                  className="mt-1 flex w-full items-center gap-2.5 rounded-xl bg-ink/[0.05] px-3 py-2.5 text-left text-[13.5px] font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+                >
+                  <Sparkles className="size-4 shrink-0 text-[var(--accent)]" aria-hidden />
+                  <span className="truncate">Ask AI Copilot: “{q}”</span>
+                </button>
+              </div>
             )}
           </motion.div>
         )}

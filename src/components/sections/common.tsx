@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 
 export const SPRING = { type: "spring" as const, stiffness: 280, damping: 24 };
 
+/** Always visible on mount so Lenis/hash jumps to #nutrition, #pairings, or #sources never leave sections blank. */
 export const reveal = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-12% 0px" },
+  initial: { opacity: 1, y: 0 },
+  animate: { opacity: 1, y: 0 },
   transition: SPRING,
 };
 

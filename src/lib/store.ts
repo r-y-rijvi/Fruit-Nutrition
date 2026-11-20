@@ -16,6 +16,8 @@ interface AppState {
   busy: boolean;
   thumbs: Record<string, string>;
   heroVisible: boolean;
+  copilotOpen: boolean;
+  copilotQuery: string | null;
   setFruit: (id: string) => void;
   explode: () => void;
   reassemble: () => void;
@@ -27,6 +29,9 @@ interface AppState {
   setBusy: (v: boolean) => void;
   setThumb: (id: string, url: string) => void;
   setHeroVisible: (v: boolean) => void;
+  setCopilotOpen: (v: boolean) => void;
+  setCopilotQuery: (q: string | null) => void;
+  askCopilot: (q: string) => void;
 }
 
 export const useApp = create<AppState>((set, get) => ({
@@ -40,6 +45,8 @@ export const useApp = create<AppState>((set, get) => ({
   busy: false,
   thumbs: {},
   heroVisible: true,
+  copilotOpen: false,
+  copilotQuery: null,
   setFruit: (id) => {
     if (id === get().fruitId) return;
     set({ fruitId: id, view: "whole", activeLayer: "flesh", hoverLayer: null, hoverFruit: false });
@@ -60,6 +67,9 @@ export const useApp = create<AppState>((set, get) => ({
   setBusy: (v) => set({ busy: v }),
   setThumb: (id, url) => set((s) => ({ thumbs: { ...s.thumbs, [id]: url } })),
   setHeroVisible: (v) => set({ heroVisible: v }),
+  setCopilotOpen: (v) => set({ copilotOpen: v }),
+  setCopilotQuery: (q) => set({ copilotQuery: q }),
+  askCopilot: (q) => set({ copilotOpen: true, copilotQuery: q }),
 }));
 
 /** Screen-space positions of 3D anchor points, written every frame by the canvas and read by the SVG overlay. */

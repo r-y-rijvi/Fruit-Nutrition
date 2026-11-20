@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion, type Variants } from "motion/react";
-import { ArrowUpRight, Shrink, Slice } from "lucide-react";
+import { ArrowUpRight, Shrink, Slice, Sparkles } from "lucide-react";
 import { FRUITS, FRUIT_BY_ID } from "@/data";
 import { fdcUrl } from "@/data/sources";
 import { SHAPES } from "@/components/three/shapes";
@@ -115,6 +115,7 @@ export function HeroActions({ className }: { className?: string }) {
   const setHoverLayer = useApp((s) => s.setHoverLayer);
   const explode = useApp((s) => s.explode);
   const reassemble = useApp((s) => s.reassemble);
+  const setCopilotOpen = useApp((s) => s.setCopilotOpen);
   const fruit = FRUIT_BY_ID[fruitId];
   const layers = view === "layers";
 
@@ -131,6 +132,15 @@ export function HeroActions({ className }: { className?: string }) {
           {layers ? "Reassemble" : "Slice open"}
         </GlowButton>
 
+        <button
+          type="button"
+          onClick={() => setCopilotOpen(true)}
+          className="inline-flex h-12 items-center gap-2 rounded-full border border-ink/15 bg-paper/85 px-5 text-[14px] font-semibold text-ink shadow-xs backdrop-blur-md transition-colors hover:bg-ink hover:text-white"
+        >
+          <Sparkles className="size-4 text-tangerine" aria-hidden />
+          Ask AI Copilot
+        </button>
+
         <AnimatePresence initial={false}>
           {layers && (
             <motion.div
@@ -140,7 +150,7 @@ export function HeroActions({ className }: { className?: string }) {
               exit={{ opacity: 0, x: -10, transition: { duration: 0.15 } }}
             >
               <LayoutGroup id="layer-seg">
-                <div role="radiogroup" aria-label="Fruit layer" className="flex rounded-full border border-ink/10 bg-paper/60 p-1 backdrop-blur-md">
+                <div role="radiogroup" aria-label="Fruit layer" className="flex rounded-full border border-ink/10 bg-paper/70 p-1 backdrop-blur-md">
                   {fruit.layers.map((l, i) => {
                     const on = activeLayer === l.key;
                     return (
@@ -183,8 +193,8 @@ export function HeroActions({ className }: { className?: string }) {
         </AnimatePresence>
       </div>
 
-      <p className="font-mono text-[10.5px] tracking-[0.1em] text-ink/55 uppercase max-[899px]:hidden">
-        {layers ? "Esc or click empty space to reassemble" : "Drag to rotate · Click fruit to slice"}
+      <p className="font-mono text-[10.5px] tracking-[0.1em] text-ink/60 uppercase max-[899px]:hidden">
+        {layers ? "Esc or click empty space to reassemble" : "Drag to rotate · Click fruit to slice · Ask AI Copilot"}
       </p>
     </div>
   );
